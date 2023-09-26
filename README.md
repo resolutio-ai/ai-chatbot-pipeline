@@ -24,7 +24,7 @@ example: `source activate ai_env/bin/activate`
 cd ai-chatbot-pipeline/
 pip install -r requirements.txt
 ```
-6. Next, place the `.env` file (sent separately for security reasons) outside the repository directory.
+6. Next, place the `.env` file with API keys (sent separately for security reasons) outside the repository directory.
 7. Now go to `/ai-chatbot-pipeline` directory and from terminal, run app.py like below.
 ```commandline
 python app.py
@@ -46,4 +46,4 @@ python app.py
 9. Once an option is selected, you will be asked to give a prompt. 
 10. Write your question as a prompt and hit enter. First time it may take a while to get back a response.
 11. The response will be printed in the terminal for your reference. Additionally, the data (answer + chat_history) will be written in `chats.json` file in real-time.
-
+12. To end the application, press `ctrl + c` in both terminals. 
