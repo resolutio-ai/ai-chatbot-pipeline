@@ -1,11 +1,6 @@
 from flask import Flask, jsonify, request, render_template
 from flask_restful import reqparse, abort, Api, Resource
-import json
-
 import os
-import sys
-import requests
-import inquirer
 import pinecone
 from langchain.llms import Replicate
 from langchain.vectorstores import Pinecone
@@ -74,7 +69,6 @@ def init_qa_model(filepath):
     return qa_chain
 
 
-
 def init_chat_model():
 
     template = """You are an Assistant named as ResBot. Your job is to answer questions only related to Copyright and IP rights of artworks, Copyright and IP rights of artists, Copyright and IP rights of \
@@ -94,140 +88,45 @@ def init_chat_model():
     return llm_chain
 
 
-@app.route('/qa',  methods=['GET', 'POST'])
-def qa_endpoint():
-
-    query = input('Prompt: ')
-    if query.lower() in ["exit", "quit", "q"]:
-        print('Exiting')
-        sys.exit()
-
-    result = qa_chain({'question': query, 'chat_history': chat_history})
-    # print('Answer: ' + result['answer'] + '\n')
-    chat_history.append((query, result['answer']))
-    output = {"answer": result['answer'], 'chat_history': chat_history}
-    return jsonify(output)
-
-
-@app.route('/chat', methods=['GET', 'POST'])
-def chat_endpoint():
-
-    query = input('Prompt: ')
-    if query.lower() in ["exit", "quit", "q"]:
-        print('Exiting')
-        sys.exit()
-
-    result = llm_chain.predict(human_input=query)
-    # print('Answer: ' + result['answer'] + '\n')
-    chat_history.append((query, result))
-    output = {"answer": result, 'chat_history': chat_history}
-    return jsonify(output)
-
-
-
 @app.route('/bot',  methods=['POST'])
 def run_pipeline():
     global qa_chain
     global chat_history
-    global llm_chain
+    global llm_chain 
 
-    questions = [
-        inquirer.List('category',
-                      message="What do you need help with today?",
-                      choices=['General IP Queries', 'Azuki License', 'Viral Public License', 'BYAC License',
-                               'MAYC License'],
-                      ),
-    ]
-    answers = inquirer.prompt(questions)
-    category = answers["category"]
+    chat_history = []
+    body = request.get_json()
 
-    if category == 'General IP Queries':
+    # Access specific details from the request body
+    query = body['message']
+    category = body['category'] 
+    userId = body['userId']
+    timeStamp = body['timeStamp']
 
-        chat_history = []
-        llm_chain = init_chat_model()
+    if category.lower() == 'general ip queries' or category == "":        
+        llm_chain  = init_chat_model()
 
-        url = 'http://127.0.0.1:5000/chat'
-        while True:
-            response = requests.get(url)
-            data = response.json()
-            print(data)
+        result = llm_chain.predict(human_input=query)       
+        output = {"query": query, "result": result, "userId": userId, "timeStamp": timeStamp}
+        chat_history.append(output)        
+        return jsonify(output)
 
-            with open('./chats.json', 'a') as json_file:
-                json.dump(data, json_file)
-                json_file.write('\n')
+    if category.lower == 'azuki license':
+        qa_chain = init_qa_model('./files/azuki_license_man.pdf')        
 
+    elif category.lower == 'viral public license':
+        qa_chain = init_qa_model('./files/Viral_Public_License.pdf')        
 
-    if category == 'Azuki License':
-
-        chat_history = []
-        qa_chain = init_qa_model('./files/azuki_license_man.pdf')
-
-        url = 'http://127.0.0.1:5000/qa'
-
-        while True:
-            response = requests.get(url)
-            data = response.json()
-            print(data)
-
-            with open('./chats.json', 'a') as json_file:
-                json.dump(data, json_file)
-                json_file.write('\n')
-
-
-    if category == 'Viral Public License':
-
-        chat_history = []
-
-        qa_chain = init_qa_model('./files/Viral_Public_License.pdf')
-
-        url = 'http://127.0.0.1:5000/qa'
-        while True:
-            response = requests.get(url)
-            data = response.json()
-            print(data)
-
-            with open('./chats.json', 'a') as json_file:
-                json.dump(data, json_file)
-                json_file.write('\n')
-
-        #return jsonify(output)
-
-    if category == 'BYAC License':
-
-        chat_history = []
-
+    elif category.lower() == 'byac License':
         qa_chain = init_qa_model('./files/BAYC.pdf')
 
-        url = 'http://127.0.0.1:5000/qa'
-        while True:
-            response = requests.get(url)
-            data = response.json()
-            print(data)
-
-            with open('./chats.json', 'a') as json_file:
-                json.dump(data, json_file)
-                json_file.write('\n')
-
-        #return jsonify(output)
-
-
-    if category == 'MAYC License':
-
-        chat_history = []
-
-        qa_chain = init_qa_model('./files/MAYC.pdf')
-
-        url = 'http://127.0.0.1:5000/qa'
-        while True:
-            response = requests.get(url)
-            data = response.json()
-            print(data)
-
-            with open('./chats.json', 'a') as json_file:
-                json.dump(data, json_file)
-                json_file.write('\n')
-
+    elif category.lower() == 'mayc license':
+        qa_chain = init_qa_model('./files/MAYC.pdf')        
+    
+    result = qa_chain({'question': query, 'chat_history': chat_history})
+    output = {"query": query, "result": result['answer'], "userId": userId, "timeStamp": timeStamp}
+    chat_history.append(output)        
+    return jsonify(output)
 
 if __name__ == "__main__":
-    app.run(debug=True)
-
+    app.run(port=6321, debug=True)
