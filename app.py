@@ -87,6 +87,9 @@ def init_chat_model():
 
     return llm_chain
 
+@app.route('/', methods=['GET'])
+def sayHello():
+    return jsonify({'message': 'Welcome to The Resolutio Official Bot😍'})
 
 @app.route('/bot',  methods=['POST'])
 def run_pipeline():
