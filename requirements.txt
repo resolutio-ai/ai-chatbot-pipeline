@@ -6,3 +6,5 @@ langchain
 flask_restful
 requests
 flask
+gunicorn
+waitress
